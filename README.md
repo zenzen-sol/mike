@@ -56,6 +56,7 @@ Configure these env vars in `backend/.env`:
 | --- | --- |
 | `S3_ENDPOINT_URL` | Provider endpoint URL |
 | `S3_REGION` | Region. Defaults to `auto` (correct for R2). Required for Supabase Storage and AWS S3. |
+| `S3_FORCE_PATH_STYLE` | `true` to use path-style addressing (`endpoint/bucket/key`) instead of virtual-hosted-style (`bucket.endpoint/key`). Required for Supabase Storage; leave unset/`false` for R2 and AWS S3. |
 | `S3_ACCESS_KEY_ID` | Access key |
 | `S3_SECRET_ACCESS_KEY` | Secret key |
 | `S3_BUCKET_NAME` | Bucket name (default: `mike`) |
@@ -75,6 +76,7 @@ S3_BUCKET_NAME=mike
 ```
 S3_ENDPOINT_URL=https://<project-ref>.supabase.co/storage/v1/s3
 S3_REGION=<project-region, e.g. us-east-1>
+S3_FORCE_PATH_STYLE=true
 S3_ACCESS_KEY_ID=<supabase-s3-access-key>
 S3_SECRET_ACCESS_KEY=<supabase-s3-secret-key>
 S3_BUCKET_NAME=mike

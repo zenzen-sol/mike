@@ -11,6 +11,11 @@
  *   S3_BUCKET_NAME       — bucket name (default: "mike")
  *   S3_REGION            — region (default: "auto"; required by some
  *                          providers like Supabase Storage and AWS S3)
+ *   S3_FORCE_PATH_STYLE  — "true" to use path-style addressing instead of
+ *                          virtual-hosted-style. Required for Supabase
+ *                          Storage and other providers whose hosts do not
+ *                          have a wildcard TLS cert covering bucket
+ *                          subdomains. Default: false (R2/AWS-compatible).
  */
 
 import {
@@ -28,11 +33,14 @@ const ACCESS_KEY_ID =
 const SECRET_ACCESS_KEY =
   process.env.S3_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY;
 const REGION = process.env.S3_REGION ?? "auto";
+const FORCE_PATH_STYLE =
+  (process.env.S3_FORCE_PATH_STYLE ?? "").toLowerCase() === "true";
 
 function getClient(): S3Client {
   return new S3Client({
     region: REGION,
     endpoint: ENDPOINT_URL!,
+    forcePathStyle: FORCE_PATH_STYLE,
     credentials: {
       accessKeyId: ACCESS_KEY_ID!,
       secretAccessKey: SECRET_ACCESS_KEY!,

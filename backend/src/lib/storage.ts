@@ -1,12 +1,16 @@
 /**
- * Cloudflare R2 storage utilities for Mike document management.
- * R2 is S3-compatible — uses @aws-sdk/client-s3.
+ * S3-compatible object storage utilities for Mike document management.
+ * Uses @aws-sdk/client-s3, so any S3-compatible provider works:
+ * Cloudflare R2, Supabase Storage (S3 endpoint), AWS S3, Backblaze B2, etc.
  *
- * Required env vars:
- *   R2_ENDPOINT_URL     — https://<account-id>.r2.cloudflarestorage.com
- *   R2_ACCESS_KEY_ID    — R2 API token (Access Key ID)
- *   R2_SECRET_ACCESS_KEY — R2 API token (Secret Access Key)
- *   R2_BUCKET_NAME      — bucket name (default: "mike")
+ * Required env vars (S3_* are canonical; R2_* are accepted as a fallback
+ * for backward compatibility with earlier deployments):
+ *   S3_ENDPOINT_URL      — provider endpoint URL
+ *   S3_ACCESS_KEY_ID     — access key
+ *   S3_SECRET_ACCESS_KEY — secret key
+ *   S3_BUCKET_NAME       — bucket name (default: "mike")
+ *   S3_REGION            — region (default: "auto"; required by some
+ *                          providers like Supabase Storage and AWS S3)
  */
 
 import {
@@ -17,23 +21,30 @@ import {
 } from "@aws-sdk/client-s3";
 import { getSignedUrl as awsGetSignedUrl } from "@aws-sdk/s3-request-presigner";
 
+const ENDPOINT_URL =
+  process.env.S3_ENDPOINT_URL ?? process.env.R2_ENDPOINT_URL;
+const ACCESS_KEY_ID =
+  process.env.S3_ACCESS_KEY_ID ?? process.env.R2_ACCESS_KEY_ID;
+const SECRET_ACCESS_KEY =
+  process.env.S3_SECRET_ACCESS_KEY ?? process.env.R2_SECRET_ACCESS_KEY;
+const REGION = process.env.S3_REGION ?? "auto";
+
 function getClient(): S3Client {
   return new S3Client({
-    region: "auto",
-    endpoint: process.env.R2_ENDPOINT_URL!,
+    region: REGION,
+    endpoint: ENDPOINT_URL!,
     credentials: {
-      accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+      accessKeyId: ACCESS_KEY_ID!,
+      secretAccessKey: SECRET_ACCESS_KEY!,
     },
   });
 }
 
-const BUCKET = process.env.R2_BUCKET_NAME ?? "mike";
+const BUCKET =
+  process.env.S3_BUCKET_NAME ?? process.env.R2_BUCKET_NAME ?? "mike";
 
 export const storageEnabled = Boolean(
-  process.env.R2_ENDPOINT_URL &&
-  process.env.R2_ACCESS_KEY_ID &&
-  process.env.R2_SECRET_ACCESS_KEY,
+  ENDPOINT_URL && ACCESS_KEY_ID && SECRET_ACCESS_KEY,
 );
 
 // ---------------------------------------------------------------------------
@@ -98,7 +109,7 @@ export async function getSignedUrl(
   try {
     const client = getClient();
     // Override the response Content-Disposition so the browser uses this
-    // filename on download, instead of the last path segment of the R2 key
+    // filename on download, instead of the last path segment of the storage key
     // (which includes the document UUID). The `download` attribute on <a>
     // is ignored for cross-origin URLs, so we have to set it server-side.
     const responseContentDisposition = downloadFilename
